@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<databaseSettings>
+		<database databaseName="EUD" driver="ODBC Driver 17 for SQL Server" server="127.0.0.1" userName="username" password="password" />
+		<database databaseName="SAP" driver="ODBC Driver 17 for SQL Server" server="127.0.0.1" userName="username" password="password" />
+		<database databaseName="TruckCenter" driver="ODBC Driver 17 for SQL Server" userName="username" password="password" />
+	</databaseSettings>
+</configuration>
