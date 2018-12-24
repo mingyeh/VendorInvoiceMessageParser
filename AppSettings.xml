@@ -1,8 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 	<databaseSettings>
-		<database databaseName="EUD" driver="ODBC Driver 17 for SQL Server" server="127.0.0.1" userName="username" password="password" />
-		<database databaseName="SAP" driver="ODBC Driver 17 for SQL Server" server="127.0.0.1" userName="username" password="password" />
-		<database databaseName="TruckCenter" driver="ODBC Driver 17 for SQL Server" userName="username" password="password" />
+		<database databaseName="EUD" driver="ODBC Driver 17 for SQL Server" server="153.112.60.15" userName="dpnweb" password="dpnweb1" />
+		<database databaseName="SAP" driver="ODBC Driver 17 for SQL Server" server="153.112.61.75" userName="dpnweb" password="dpnweb1" />
+		<database databaseName="TruckCenter" driver="ODBC Driver 17 for SQL Server" userName="dpnweb" password="dpnweb1" />
 	</databaseSettings>
+	<uiSettings>
+		<headerRow fontColor="FFFFFF" backgroundColor="34495E" />
+		<highLightRow fontColor="FFFFFF" backgroundColor="D35400" />
+	</uiSettings>
+	<validationSettings>
+		<typeOfInvoice>
+			<item value="Invoice" />
+			<item value="Credit" />
+			<item value="Debit" />
+			<item value="SCredit" />
+		</typeOfInvoice>
+		<documentType>
+			<item value="RD" />
+			<item value="RL" />
+			<item value="RH" />
+			<item value="RA" />
+			<item value="85" />
+		</documentType>
+	</validationSettings>
 </configuration>

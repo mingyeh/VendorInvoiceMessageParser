@@ -97,18 +97,56 @@ overallSheet['D1'] = 'MessageID'
 overallSheet['E1'] = 'FileLength'
 overallSheet['F1'] = 'CompanyCode'
 
-navyFill = PatternFill(start_color='000080',
-                   end_color='000080',
+#Read configuration
+configurationContent = '\n'.join(open('AppSettings.xml').readlines())
+configurationDocument = BeautifulSoup(configurationContent, features='xml')
+
+headerRowDisplayStyle = {'fontColor':'FFFFFF', 'backgroundColor':'000080'}
+highLightRowDisplayStyle = {'fontColor':'FFFFFF', 'backgroundColor':'FFFF00'}
+uiConfiguration = configurationDocument.find('uiSettings')
+if not uiConfiguration is None:
+    headerRowConfiguration = uiConfiguration.find('headerRow')
+    if not headerRowConfiguration is None:
+        if not headerRowConfiguration.get('fontColor') is None:
+            headerRowDisplayStyle['fontColor'] = headerRowConfiguration.get('fontColor')
+        if not headerRowConfiguration.get('backgroundColor') is None:
+            headerRowDisplayStyle['backgroundColor'] = headerRowConfiguration.get('backgroundColor')
+    highLightRowConfiguration = uiConfiguration.find('highLightRow')
+    if not highLightRowConfiguration is None:
+        if not highLightRowConfiguration.get('fontColor') is None:
+            highLightRowDisplayStyle['fontColor'] = highLightRowConfiguration.get('fontColor')
+        if not highLightRowConfiguration.get('backgroundColor') is None:
+            highLightRowDisplayStyle['backgroundColor'] = highLightRowConfiguration.get('backgroundColor')
+
+validTypeOfInvoiceValues = []
+validDocumentTypeValues = []
+validationConfiguration = configurationDocument.find('validationSettings')
+if not validationConfiguration is None:
+    typeOfInvoiceConfiguration = validationConfiguration.find('typeOfInvoice')
+    if not typeOfInvoiceConfiguration is None:
+        for item in typeOfInvoiceConfiguration.find_all('item'):
+            if not item.get('value') is None:
+                validTypeOfInvoiceValues.append(item.get('value'))
+    
+    documentTypeConfiguration = validationConfiguration.find('documentType')
+    if not documentTypeConfiguration is None:
+        for item in documentTypeConfiguration.find_all('item'):
+            if not item.get('value') is None:
+                validDocumentTypeValues.append(item.get('value'))
+
+headerRowFill = PatternFill(start_color=headerRowDisplayStyle['backgroundColor'],
+                   end_color=headerRowDisplayStyle['backgroundColor'],
                    fill_type='solid')
-yellowFill = PatternFill(start_color='FFFF00',
-                   end_color='FFFF00',
+highLightRowFill = PatternFill(start_color=highLightRowDisplayStyle['backgroundColor'],
+                   end_color=highLightRowDisplayStyle['backgroundColor'],
                    fill_type='solid')
-whiteFont = Font(color=colors.WHITE)
+headerRowFont = Font(color=headerRowDisplayStyle['fontColor'])
+highLightRowFont = Font(color=highLightRowDisplayStyle['fontColor'])
 
 maxColumn = overallSheet.max_column
 for i in range(1, maxColumn + 1):
-    overallSheet.cell(row = 1, column = i).fill = navyFill
-    overallSheet.cell(row=1, column=i).font = whiteFont
+    overallSheet.cell(row = 1, column = i).fill = headerRowFill
+    overallSheet.cell(row = 1, column = i).font = headerRowFont
 
 rowIndex = 2
 for row in cursor.fetchall():
@@ -148,8 +186,8 @@ for row in cursor.fetchall():
 
     maxColumn = fileSheet.max_column
     for i in range(1, maxColumn + 1):
-        fileSheet.cell(row=1, column=i).fill = navyFill
-        fileSheet.cell(row=1, column=i).font = whiteFont
+        fileSheet.cell(row = 1, column = i).fill = headerRowFill
+        fileSheet.cell(row = 1, column = i).font = headerRowFont
 
     fileRowIndex = 2
 
@@ -184,11 +222,13 @@ for row in cursor.fetchall():
             fileSheet['I' + str(fileRowIndex)] = vendorNumber
             fileSheet['J' + str(fileRowIndex)] = currencyCode
             fileSheet['K' + str(fileRowIndex)] = typeOfInvoice
-            if typeOfInvoice not in ('Invoice', 'Credit', 'Debit', 'SCredit'):
-                fileSheet['K' + str(fileRowIndex)].fill = yellowFill
+            if typeOfInvoice not in validTypeOfInvoiceValues:
+                fileSheet['K' + str(fileRowIndex)].fill = highLightRowFill
+                fileSheet['K' + str(fileRowIndex)].font = highLightRowFont
             fileSheet['L' + str(fileRowIndex)] = documentType
-            if documentType not in ('RD', 'RL', 'RH', 'RA', '85'):
-                fileSheet['L' + str(fileRowIndex)].fill = yellowFill
+            if documentType not in validDocumentTypeValues:
+                fileSheet['L' + str(fileRowIndex)].fill = highLightRowFill
+                fileSheet['L' + str(fileRowIndex)].font = highLightRowFont
             fileSheet['M' + str(fileRowIndex)] = quantity
             fileSheet['N' + str(fileRowIndex)] = grossValue
 
