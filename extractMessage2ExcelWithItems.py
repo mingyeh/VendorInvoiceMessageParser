@@ -84,6 +84,7 @@ conn = pyodbc.connect('Driver={%s};'
         'UID=%s;'
         'PWD=%s' % (sapDatabaseConfiguration['driver'], sapDatabaseConfiguration['server'], 'SAP',
                     sapDatabaseConfiguration['userName'], sapDatabaseConfiguration['password']))
+print('Connected to SAP database.\n')
 cursor = conn.cursor()
 cursor.execute(checkSql)
 
@@ -165,6 +166,8 @@ for row in cursor.fetchall():
     overallSheet['E' + str(rowIndex)] = fileLength
     overallSheet['F' + str(rowIndex)] = companyCode
 
+    print('Analyzing content of File #%s\n' % (fileID,))
+
     rowIndex += 1
     fileSheet = wb.create_sheet(title=str(fileID), index=1)
     fileSheet['A1'] = 'Accounting Document' # DocumentNumber
@@ -204,6 +207,8 @@ for row in cursor.fetchall():
         typeOfInvoice = header.find('TypeOfInvoice').get_text()
         documentType = header.find('DocumentType').get_text()
         invoiceNumber = header.find('InvoiceNumber').get_text()
+
+        print('\tFound DocumentNumber %s with TypeOfInvoice as %s, DocumentType as %s\n' % (documentNumber, typeOfInvoice, documentType))
 
         for item in header.parent.find_all('VendorInvoiceItem'):
             purchasingDocumentNumber = item.find('PurchasingDocumentNumber').get_text()
