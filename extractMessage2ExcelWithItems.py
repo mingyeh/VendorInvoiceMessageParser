@@ -5,6 +5,8 @@ from bs4 import BeautifulSoup
 import openpyxl
 from openpyxl.styles import PatternFill, colors, Font
 
+databaseConnectionPool = {}
+
 def getDatabaseConfiguration(databaseName):
     result = {'driver':'','server':'', 'userName':'', 'password':''}
     
@@ -25,14 +27,15 @@ def getDatabaseConfiguration(databaseName):
 
     return result
 
+eudDatabaseConfiguration = getDatabaseConfiguration('EUD')
+eudConn = pyodbc.connect('Driver={%s};'
+            'Server=%s;'
+            'Database=%s;'
+            'UID=%s;'
+            'PWD=%s' % (eudDatabaseConfiguration['driver'], eudDatabaseConfiguration['server'], 'EUD',
+                        eudDatabaseConfiguration['userName'], eudDatabaseConfiguration['password']))
+
 def getTruckCenterConnection(truckCenterID):
-    eudDatabaseConfiguration = getDatabaseConfiguration('EUD')
-    eudConn = pyodbc.connect('Driver={%s};'
-        'Server=%s;'
-        'Database=%s;'
-        'UID=%s;'
-        'PWD=%s' % (eudDatabaseConfiguration['driver'], eudDatabaseConfiguration['server'], 'EUD',
-                    eudDatabaseConfiguration['userName'], eudDatabaseConfiguration['password']))
     sql = '''select 
                 tc.SqlDb,
                 s.IPAddress
@@ -46,12 +49,17 @@ def getTruckCenterConnection(truckCenterID):
     truckCenterDatabaseConfiguration = getDatabaseConfiguration('TruckCenter')
     
     if dbRow != None:
-        return pyodbc.connect('Driver={%s};'
-        'Server=%s;'
-        'Database=%s;'
-        'UID=%s;'
-        'PWD=%s' % (truckCenterDatabaseConfiguration['driver'], dbRow[1], dbRow[0],
-                    truckCenterDatabaseConfiguration['userName'], truckCenterDatabaseConfiguration['password']))
+        if truckCenterID in databaseConnectionPool.keys():
+            return databaseConnectionPool[truckCenterID]
+        else:
+            newConnection = pyodbc.connect('Driver={%s};'
+                                'Server=%s;'
+                                'Database=%s;'
+                                'UID=%s;'
+                                'PWD=%s' % (truckCenterDatabaseConfiguration['driver'], dbRow[1], dbRow[0],
+                                            truckCenterDatabaseConfiguration['userName'], truckCenterDatabaseConfiguration['password']))
+            databaseConnectionPool[truckCenterID] = newConnection
+            return newConnection
     else:
         return None
 
@@ -263,12 +271,17 @@ for row in cursor.fetchall():
                 if truckCenterRow != None:
                     fileSheet['O' + str(fileRowIndex)] = truckCenterRow[0]
                     fileSheet['P' + str(fileRowIndex)] = truckCenterRow[1]
-                truckCenterConn.close()
 
             fileRowIndex += 1
 
 wb.save('xmlMessage.xlsx')
-print('finished.')
+print('finished.\n')
 conn.close()
+print('Disconnected from SAP database.\n')
+eudConn.close()
+print('Disconnected from EUD database.\n')
+for connectionKey in databaseConnectionPool.keys():
+    databaseConnectionPool[connectionKey].close()
+    print('Disconnected from Truck Center %s database.\n' % (connectionKey,))
 
 
