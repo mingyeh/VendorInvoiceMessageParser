@@ -1,5 +1,9 @@
 # VendorInvoiceMessageParser
-This script is used to extract the Vendor Invoice information from SAP Staging database for further analysis.
+This script is used to extract Vendor Invoice information from SAP Staging database for further analysis.
+
+![Overall Spreadsheet](https://raw.githubusercontent.com/mingyeh/VendorInvoiceMessageParser/master/overall.png "Overall Spreadsheet")
+
+![Data Content Spreadsheet](https://raw.githubusercontent.com/mingyeh/VendorInvoiceMessageParser/master/data_content.png "Data Content Spreadsheet")
 
 ## Prerequisite
 Before you start the engine, you'd need to intall some Python packages.
@@ -25,7 +29,11 @@ All kudos to the PHPExcel team as openpyxl was initially based on PHPExcel.
 You can install the package with PIP, or download the package from https://pypi.org/project/openpyxl/
 
 ## Usage
-You'd need to specify the database connection information in *AppSettings.xml*, and update the validation rule for TypeOfInvoice and DocumentType is necessary.
+You'd need to specify the database connection information in *AppSettings.xml*, and update the validation rules for TypeOfInvoice and DocumentType if necessary.
+
+You can refer to the configuration in "ODBC Data Source Administrator" window for the "driver" value in *AppSettings.xml*, as the screendump underneath:
+
+![ODBC Data Source Administrator](https://raw.githubusercontent.com/mingyeh/VendorInvoiceMessageParser/master/odbc_driver.png "ODBC Data Source Administrator")
 
 You may need to change the query criteria specified by SQL script listed underneath:
 ```sql
