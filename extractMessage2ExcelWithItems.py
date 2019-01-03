@@ -4,6 +4,14 @@ import pyodbc
 from bs4 import BeautifulSoup
 import openpyxl
 from openpyxl.styles import PatternFill, colors, Font
+from colorama import init, Fore, Style
+
+init()
+
+#Read configuration info
+if not os.path.exists('AppSettings.xml'):
+    print(Fore.RED + "Cannot find configuration file.")
+    exit()
 
 databaseConnectionPool = {}
 
@@ -63,11 +71,6 @@ def getTruckCenterConnection(truckCenterID):
     else:
         return None
 
-#Read configuration info
-if not os.path.exists('AppSettings.xml'):
-    print("Cannot find configuration file.")
-    exit()
-
 checkSql = '''select top 3 * from
 (select 
 s.FileID,
@@ -92,7 +95,8 @@ conn = pyodbc.connect('Driver={%s};'
         'UID=%s;'
         'PWD=%s' % (sapDatabaseConfiguration['driver'], sapDatabaseConfiguration['server'], 'SAP',
                     sapDatabaseConfiguration['userName'], sapDatabaseConfiguration['password']))
-print('Connected to SAP database.\n')
+print(Fore.GREEN + 'Connected to SAP database.\n')
+print(Style.RESET_ALL)
 cursor = conn.cursor()
 cursor.execute(checkSql)
 
@@ -275,7 +279,7 @@ for row in cursor.fetchall():
             fileRowIndex += 1
 
 wb.save('xmlMessage.xlsx')
-print('finished.\n')
+print(Fore.GREEN + 'finished.\n')
 conn.close()
 print('Disconnected from SAP database.\n')
 eudConn.close()
@@ -283,5 +287,5 @@ print('Disconnected from EUD database.\n')
 for connectionKey in databaseConnectionPool.keys():
     databaseConnectionPool[connectionKey].close()
     print('Disconnected from Truck Center %s database.\n' % (connectionKey,))
-
+print(Style.RESET_ALL)
 
