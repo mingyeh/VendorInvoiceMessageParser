@@ -36,12 +36,12 @@ def getDatabaseConfiguration(databaseName):
     return result
 
 eudDatabaseConfiguration = getDatabaseConfiguration('EUD')
-eudConn = pyodbc.connect('Driver={%s};'
-            'Server=%s;'
-            'Database=%s;'
-            'UID=%s;'
-            'PWD=%s' % (eudDatabaseConfiguration['driver'], eudDatabaseConfiguration['server'], 'EUD',
-                        eudDatabaseConfiguration['userName'], eudDatabaseConfiguration['password']))
+eudConn = pyodbc.connect('Driver={driver};'
+            'Server={server};'
+            'Database={database};'
+            'UID={username};'
+            'PWD={password}'.format(driver = eudDatabaseConfiguration['driver'], server = eudDatabaseConfiguration['server'], database = 'EUD',
+                        username = eudDatabaseConfiguration['userName'], password = eudDatabaseConfiguration['password']))
 
 def getTruckCenterConnection(truckCenterID):
     sql = '''select 
@@ -49,7 +49,7 @@ def getTruckCenterConnection(truckCenterID):
                 s.IPAddress
             from adtbTruckCenters as tc
                 inner join adtbServers as s on tc.ServerName = s.ServerName
-            where TruckCenterID = %s''' % (truckCenterID,)
+            where TruckCenterID = {tcID}'''.format(tcID = truckCenterID)
     dbCursor = eudConn.cursor()
     dbCursor.execute(sql)
     dbRow = dbCursor.fetchone()
@@ -60,12 +60,12 @@ def getTruckCenterConnection(truckCenterID):
         if truckCenterID in databaseConnectionPool.keys():
             return databaseConnectionPool[truckCenterID]
         else:
-            newConnection = pyodbc.connect('Driver={%s};'
-                                'Server=%s;'
-                                'Database=%s;'
-                                'UID=%s;'
-                                'PWD=%s' % (truckCenterDatabaseConfiguration['driver'], dbRow[1], dbRow[0],
-                                            truckCenterDatabaseConfiguration['userName'], truckCenterDatabaseConfiguration['password']))
+            newConnection = pyodbc.connect('Driver={driver};'
+                                'Server={server};'
+                                'Database={database};'
+                                'UID={username};'
+                                'PWD={password}'.format(driver = truckCenterDatabaseConfiguration['driver'], server = dbRow[1], database = dbRow[0],
+                                            username = truckCenterDatabaseConfiguration['userName'], password = truckCenterDatabaseConfiguration['password']))
             databaseConnectionPool[truckCenterID] = newConnection
             return newConnection
     else:
@@ -89,12 +89,12 @@ order by T.ProcessDate desc'''
 
 sapDatabaseConfiguration = getDatabaseConfiguration('SAP')
 
-conn = pyodbc.connect('Driver={%s};'
-        'Server=%s;'
-        'Database=%s;'
-        'UID=%s;'
-        'PWD=%s' % (sapDatabaseConfiguration['driver'], sapDatabaseConfiguration['server'], 'SAP',
-                    sapDatabaseConfiguration['userName'], sapDatabaseConfiguration['password']))
+conn = pyodbc.connect('Driver={driver};'
+        'Server={server};'
+        'Database={database};'
+        'UID={username};'
+        'PWD={password}'.format(driver = sapDatabaseConfiguration['driver'], server = sapDatabaseConfiguration['server'], database = 'SAP',
+                    username = sapDatabaseConfiguration['userName'], password = sapDatabaseConfiguration['password']))
 print(Fore.GREEN + 'Connected to SAP database.\n')
 print(Style.RESET_ALL)
 cursor = conn.cursor()
@@ -178,7 +178,7 @@ for row in cursor.fetchall():
     overallSheet['E' + str(rowIndex)] = fileLength
     overallSheet['F' + str(rowIndex)] = companyCode
 
-    print('Analyzing content of File #%s\n' % (fileID,))
+    print('Analyzing content of File #{fID}\n'.format(fID = fileID))
 
     rowIndex += 1
     fileSheet = wb.create_sheet(title=str(fileID), index=1)
@@ -220,7 +220,7 @@ for row in cursor.fetchall():
         documentType = header.find('DocumentType').get_text()
         invoiceNumber = header.find('InvoiceNumber').get_text()
 
-        print('\tFound DocumentNumber %s with TypeOfInvoice as %s, DocumentType as %s\n' % (documentNumber, typeOfInvoice, documentType))
+        print('\tFound DocumentNumber {docNumber} with TypeOfInvoice as {typeOfInv}, DocumentType as {docType}\n'.format(docNumber = documentNumber, typeOfInv = typeOfInvoice, docType = documentType))
 
         for item in header.parent.find_all('VendorInvoiceItem'):
             purchasingDocumentNumber = item.find('PurchasingDocumentNumber').get_text()
@@ -255,9 +255,9 @@ for row in cursor.fetchall():
                                     item.TruckCenterID
                                 from satbVendorInvoices as inv
                                     left join satbVendorInvoiceItems as item on inv.InvoiceID = item.InvoiceID
-                                where inv.OrderReference = '%s'
-                                    and inv.InvoiceNumber = '%s'
-                                    and item.PurchasingDocumentNumberItem = '%s'""" % (orderReference, invoiceNumber, purchasingDocumentNumberItem)
+                                where inv.OrderReference = '{orderRef}'
+                                    and inv.InvoiceNumber = '{invNo}'
+                                    and item.PurchasingDocumentNumberItem = '{purDocNoItem}'""".format(orderRef = orderReference, invNo = invoiceNumber, purDocNoItem = purchasingDocumentNumberItem)
             invoiceCursor = conn.cursor()
             invoiceCursor.execute(checkInvoiceSql)
             invoiceRow = invoiceCursor.fetchone()
@@ -267,7 +267,7 @@ for row in cursor.fetchall():
                 checkTruckCenterSql = """select 
                                                 AuthorisedValue, InvoiceValue
                                         from ppvwAllOrderSummary
-                                        where ActualOrderNo = '%s'""" % (orderReference,)
+                                        where ActualOrderNo = '{poNumber}'""".format(poNumber = orderReference)
                 truckCenterConn = getTruckCenterConnection(truckCenterID)
                 truckCenterCursor = truckCenterConn.cursor()
                 truckCenterCursor.execute(checkTruckCenterSql)
@@ -286,6 +286,6 @@ eudConn.close()
 print('Disconnected from EUD database.\n')
 for connectionKey in databaseConnectionPool.keys():
     databaseConnectionPool[connectionKey].close()
-    print('Disconnected from Truck Center %s database.\n' % (connectionKey,))
+    print('Disconnected from Truck Center {truckCenterID} database.\n'.format(truckCenterID = connectionKey))
 print(Style.RESET_ALL)
 
