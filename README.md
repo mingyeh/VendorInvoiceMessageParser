@@ -28,6 +28,12 @@ All kudos to the PHPExcel team as openpyxl was initially based on PHPExcel.
 
 You can install the package with PIP, or download the package from https://pypi.org/project/openpyxl/
 
+**colorama**
+
+Makes ANSI escape character sequences (for producing colored terminal text and cursor positioning) work under MS Windows.
+
+You can install the package with PIP, or download the package from https://pypi.org/project/colorama/
+
 ## Usage
 You'd need to specify the database connection information in *AppSettings.xml*, and update the validation rules for TypeOfInvoice and DocumentType if necessary.
 
