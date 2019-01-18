@@ -83,8 +83,7 @@ s.Data.value('declare namespace n0="http://finance.group.volvo.com/vendorinvoice
 s.Data
 from satbSourceData s
 where s.FileType = 'VendorInvoiceDetails') as t
-where ProcessResult = 'Error'
-    and MessageID <> '414D512046524F444F5F423120202020AA90F15B24C61FEF'
+where FileID in (120496,120495)
 order by T.ProcessDate desc'''
 
 sapDatabaseConfiguration = getDatabaseConfiguration('SAP')
@@ -196,8 +195,12 @@ for row in cursor.fetchall():
     fileSheet['L1'] = 'Document Type' # DocumentType
     fileSheet['M1'] = 'Quantity' # Quantity
     fileSheet['N1'] = 'GrossValue' # GrossValue
-    fileSheet['O1'] = 'Authorised Value'
-    fileSheet['P1'] = 'Invoice Value'
+    fileSheet['O1'] = 'Status'
+    fileSheet['P1'] = 'Authorised Value'
+    fileSheet['Q1'] = 'Invoice Value'
+    fileSheet['R1'] = 'Supplier'
+    fileSheet['S1'] = 'Supplier Length'
+    fileSheet['T1'] = 'PO Index Sync'
 
     maxColumn = fileSheet.max_column
     for i in range(1, maxColumn + 1):
@@ -263,18 +266,40 @@ for row in cursor.fetchall():
             invoiceRow = invoiceCursor.fetchone()
             if invoiceRow != None:
                 truckCenterID = invoiceRow[0]
+                if truckCenterID is None:
+                    print('Missing Index for {orderRef}'.format(orderRef = orderReference))
+                    continue
 
                 checkTruckCenterSql = """select 
-                                                AuthorisedValue, InvoiceValue
-                                        from ppvwAllOrderSummary
-                                        where ActualOrderNo = '{poNumber}'""".format(poNumber = orderReference)
+                                                po.AuthorisedValue,
+                                                po.InvoiceValue,
+                                                status.Status,
+                                                po.GDS_Supplier
+                                        from ppvwAllOrderSummary as po
+                                            left join pptbStatus as status on po.StatusID = status.StatusID
+                                        where po.ActualOrderNo = '{poNumber}'""".format(poNumber = orderReference)
                 truckCenterConn = getTruckCenterConnection(truckCenterID)
                 truckCenterCursor = truckCenterConn.cursor()
                 truckCenterCursor.execute(checkTruckCenterSql)
                 truckCenterRow = truckCenterCursor.fetchone()
                 if truckCenterRow != None:
-                    fileSheet['O' + str(fileRowIndex)] = truckCenterRow[0]
-                    fileSheet['P' + str(fileRowIndex)] = truckCenterRow[1]
+                    fileSheet['O' + str(fileRowIndex)] = truckCenterRow[2]
+                    fileSheet['P' + str(fileRowIndex)] = truckCenterRow[0]
+                    fileSheet['Q' + str(fileRowIndex)] = truckCenterRow[1]
+                    fileSheet['R' + str(fileRowIndex)] = truckCenterRow[3]
+                    fileSheet['S' + str(fileRowIndex)] = len(truckCenterRow[3])
+
+                    checkPOIndexSql = """select 
+                                                case when count(*) > 0 then 'YES' else 'NO' end as POIndexCreated
+                                        from satbPurchaseOrderIndex
+                                        where PurchaseOrderNo = '{orderRef}'
+                                                and CompanyCode = '{companyCode}'
+                                                and TruckCenterID = {tcID}""".format(orderRef = orderReference, companyCode = companyCode, tcID = truckCenterID)
+                    poIndexCursor = conn.cursor()
+                    poIndexCursor.execute(checkPOIndexSql)
+                    poIndexRow = poIndexCursor.fetchone()
+                    if poIndexRow != None:
+                        fileSheet['T' + str(fileRowIndex)] = poIndexRow[0]
 
             fileRowIndex += 1
 
