@@ -16,32 +16,45 @@ if not os.path.exists('AppSettings.xml'):
 databaseConnectionPool = {}
 
 def getDatabaseConfiguration(databaseName):
-    result = {'driver':'','server':'', 'userName':'', 'password':''}
+    result = {'driver':'','server':'', 'database':databaseName, 'userName':'', 'password':'', 'trustedConnection':''}
     
     configurationContent = '\n'.join(open('AppSettings.xml').readlines())
     configurationDocument = BeautifulSoup(configurationContent, features='xml')
     databaseSettingsNode = configurationDocument.find('databaseSettings')
-    if not databaseSettingsNode is None:
+    if databaseSettingsNode is not None:
         databaseConfigurationNode = databaseSettingsNode.find('database', databaseName=databaseName)
-        if not databaseConfigurationNode is None:
-            if not databaseConfigurationNode.get('driver') is None:
+        if databaseConfigurationNode is not None:
+            if databaseConfigurationNode.get('driver') is not None:
                 result['driver'] = databaseConfigurationNode.get('driver')
-            if not databaseConfigurationNode.get('server') is None:
+            if databaseConfigurationNode.get('server') is not None:
                 result['server'] = databaseConfigurationNode.get('server')
-            if not databaseConfigurationNode.get('userName') is None:
+            if databaseConfigurationNode.get('userName') is not None:
                 result['userName'] = databaseConfigurationNode.get('userName')
-            if not databaseConfigurationNode.get('password') is None:
+            if databaseConfigurationNode.get('password') is not None:
                 result['password'] = databaseConfigurationNode.get('password')
+            if databaseConfigurationNode.get('trustedConnection') is not None:
+                result['trustedConnection'] = databaseConfigurationNode.get('trustedConnection')
 
     return result
 
+def getDatabaseConnection(configuration):
+    if configuration is not None:
+        if configuration['trustedConnection'] == 'true':
+            return pyodbc.connect('Driver={driver};'
+                'Server={server};'
+                'Database={database};Trusted_Connection=yes'.format(driver = configuration['driver'], server = configuration['server'],
+                                                                    database = configuration['database']))
+        else:
+            return pyodbc.connect('Driver={driver};'
+                'Server={server};'
+                'Database={database};'
+                'UID={username};'
+                'PWD={password}'.format(driver = configuration['driver'], server = configuration['server'], database = configuration['database'],
+                                        username = configuration['userName'], password = configuration['password']))
+        
+
 eudDatabaseConfiguration = getDatabaseConfiguration('EUD')
-eudConn = pyodbc.connect('Driver={driver};'
-            'Server={server};'
-            'Database={database};'
-            'UID={username};'
-            'PWD={password}'.format(driver = eudDatabaseConfiguration['driver'], server = eudDatabaseConfiguration['server'], database = 'EUD',
-                        username = eudDatabaseConfiguration['userName'], password = eudDatabaseConfiguration['password']))
+eudConn = getDatabaseConnection(eudDatabaseConfiguration)
 
 def getTruckCenterConnection(truckCenterID):
     sql = '''select 
@@ -60,18 +73,15 @@ def getTruckCenterConnection(truckCenterID):
         if truckCenterID in databaseConnectionPool.keys():
             return databaseConnectionPool[truckCenterID]
         else:
-            newConnection = pyodbc.connect('Driver={driver};'
-                                'Server={server};'
-                                'Database={database};'
-                                'UID={username};'
-                                'PWD={password}'.format(driver = truckCenterDatabaseConfiguration['driver'], server = dbRow[1], database = dbRow[0],
-                                            username = truckCenterDatabaseConfiguration['userName'], password = truckCenterDatabaseConfiguration['password']))
+            truckCenterDatabaseConfiguration['server'] = dbRow[1]
+            truckCenterDatabaseConfiguration['database'] = dbRow[0]
+            newConnection = getDatabaseConnection(truckCenterDatabaseConfiguration)
             databaseConnectionPool[truckCenterID] = newConnection
             return newConnection
     else:
         return None
 
-checkSql = '''select top 3 * from
+checkSql = '''select top 1 * from
 (select 
 s.FileID,
 s.ProcessDate,
@@ -83,17 +93,22 @@ s.Data.value('declare namespace n0="http://finance.group.volvo.com/vendorinvoice
 s.Data
 from satbSourceData s
 where s.FileType = 'VendorInvoiceDetails') as t
-where FileID in (120496,120495)
+where FileID in (121916, 
+121917, 
+121918, 
+121919, 
+121920, 
+121921, 
+121922, 
+121923, 
+121924, 
+121925, 
+121926, 
+121927)
 order by T.ProcessDate desc'''
 
 sapDatabaseConfiguration = getDatabaseConfiguration('SAP')
-
-conn = pyodbc.connect('Driver={driver};'
-        'Server={server};'
-        'Database={database};'
-        'UID={username};'
-        'PWD={password}'.format(driver = sapDatabaseConfiguration['driver'], server = sapDatabaseConfiguration['server'], database = 'SAP',
-                    username = sapDatabaseConfiguration['userName'], password = sapDatabaseConfiguration['password']))
+conn = getDatabaseConnection(sapDatabaseConfiguration)
 print(Fore.GREEN + 'Connected to SAP database.\n')
 print(Style.RESET_ALL)
 cursor = conn.cursor()
