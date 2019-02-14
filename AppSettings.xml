@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 	<databaseSettings>
-		<database databaseName="EUD" driver="SQL Server Native Client 11.0" server="153.112.60.15" trustedConnection="true" />
-		<database databaseName="SAP" driver="SQL Server Native Client 11.0" server="153.112.61.75" trustedConnection="true" />
+		<database databaseName="EROS" driver="SQL Server Native Client 11.0" server="127.0.0.1" trustedConnection="true" />
+		<database databaseName="SAP" driver="SQL Server Native Client 11.0" server="127.0.0.1" trustedConnection="true" />
 		<database databaseName="TruckCenter" driver="SQL Server Native Client 11.0" trustedConnection="true"/>
 	</databaseSettings>
 	<uiSettings>
