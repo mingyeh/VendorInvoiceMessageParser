@@ -81,7 +81,7 @@ def getTruckCenterConnection(truckCenterID):
     else:
         return None
 
-checkSql = '''select top 1 * from
+checkSql = '''select * from
 (select 
 s.FileID,
 s.ProcessDate,
@@ -93,18 +93,7 @@ s.Data.value('declare namespace n0="http://finance.group.volvo.com/vendorinvoice
 s.Data
 from satbSourceData s
 where s.FileType = 'VendorInvoiceDetails') as t
-where FileID in (121916, 
-121917, 
-121918, 
-121919, 
-121920, 
-121921, 
-121922, 
-121923, 
-121924, 
-121925, 
-121926, 
-121927)
+where FileID in ('115680', '115731', '115757', '115778', '115899', '115916', '115940', '115955', '115958', '115983', '116005')
 order by T.ProcessDate desc'''
 
 sapDatabaseConfiguration = getDatabaseConfiguration('SAP')
@@ -176,7 +165,8 @@ for i in range(1, maxColumn + 1):
     overallSheet.cell(row = 1, column = i).font = headerRowFont
 
 rowIndex = 2
-for row in cursor.fetchall():
+sourceFileRows = cursor.fetchall()
+for row in sourceFileRows:
     fileID = row[0]
     processDate = row[1]
     processResult = row[2]
@@ -204,18 +194,19 @@ for row in cursor.fetchall():
     fileSheet['F1'] = 'PO Number' # PurchasingDocumentNumber
     fileSheet['G1'] = 'P++' # OrderReference
     fileSheet['H1'] = 'PO line item' # PurchasingDocumentNumberItem
-    fileSheet['I1'] = 'Vendor #' # VendorNumber
-    fileSheet['J1'] = 'PO Currency' # CurrencyCode
-    fileSheet['K1'] = 'Type of Invoice' # TypeOfInvoice
-    fileSheet['L1'] = 'Document Type' # DocumentType
-    fileSheet['M1'] = 'Quantity' # Quantity
-    fileSheet['N1'] = 'GrossValue' # GrossValue
-    fileSheet['O1'] = 'Status'
-    fileSheet['P1'] = 'Authorised Value'
-    fileSheet['Q1'] = 'Invoice Value'
-    fileSheet['R1'] = 'Supplier'
-    fileSheet['S1'] = 'Supplier Length'
-    fileSheet['T1'] = 'PO Index Sync'
+    fileSheet['I1'] = 'Item PO Number' # Purchase Order No in Invoice Item 
+    fileSheet['J1'] = 'Vendor #' # VendorNumber
+    fileSheet['K1'] = 'PO Currency' # CurrencyCode
+    fileSheet['L1'] = 'Type of Invoice' # TypeOfInvoice
+    fileSheet['M1'] = 'Document Type' # DocumentType
+    fileSheet['N1'] = 'Quantity' # Quantity
+    fileSheet['O1'] = 'GrossValue' # GrossValue
+    fileSheet['P1'] = 'Status'
+    fileSheet['Q1'] = 'Authorised Value'
+    fileSheet['R1'] = 'Invoice Value'
+    fileSheet['S1'] = 'Supplier'
+    fileSheet['T1'] = 'Supplier Length'
+    fileSheet['U1'] = 'PO Index Sync'
 
     maxColumn = fileSheet.max_column
     for i in range(1, maxColumn + 1):
@@ -243,6 +234,7 @@ for row in cursor.fetchall():
         for item in header.parent.find_all('VendorInvoiceItem'):
             purchasingDocumentNumber = item.find('PurchasingDocumentNumber').get_text()
             purchasingDocumentNumberItem = item.find('PurchasingDocumentNumberItem').get_text()
+            itemOrderReferenceNo = item.find('OrderReference').get_text()
             quantity = item.find('Quantity').get_text()
             grossValue = item.find('GrossValue').get_text()
             
@@ -254,18 +246,19 @@ for row in cursor.fetchall():
             fileSheet['F' + str(fileRowIndex)] = purchasingDocumentNumber
             fileSheet['G' + str(fileRowIndex)] = orderReference
             fileSheet['H' + str(fileRowIndex)] = purchasingDocumentNumberItem
-            fileSheet['I' + str(fileRowIndex)] = vendorNumber
-            fileSheet['J' + str(fileRowIndex)] = currencyCode
-            fileSheet['K' + str(fileRowIndex)] = typeOfInvoice
+            fileSheet['I' + str(fileRowIndex)] = itemOrderReferenceNo
+            fileSheet['J' + str(fileRowIndex)] = vendorNumber
+            fileSheet['K' + str(fileRowIndex)] = currencyCode
+            fileSheet['L' + str(fileRowIndex)] = typeOfInvoice
             if typeOfInvoice not in validTypeOfInvoiceValues:
-                fileSheet['K' + str(fileRowIndex)].fill = highLightRowFill
-                fileSheet['K' + str(fileRowIndex)].font = highLightRowFont
-            fileSheet['L' + str(fileRowIndex)] = documentType
-            if documentType not in validDocumentTypeValues:
                 fileSheet['L' + str(fileRowIndex)].fill = highLightRowFill
                 fileSheet['L' + str(fileRowIndex)].font = highLightRowFont
-            fileSheet['M' + str(fileRowIndex)] = quantity
-            fileSheet['N' + str(fileRowIndex)] = grossValue
+            fileSheet['M' + str(fileRowIndex)] = documentType
+            if documentType not in validDocumentTypeValues:
+                fileSheet['M' + str(fileRowIndex)].fill = highLightRowFill
+                fileSheet['M' + str(fileRowIndex)].font = highLightRowFont
+            fileSheet['N' + str(fileRowIndex)] = quantity
+            fileSheet['O' + str(fileRowIndex)] = grossValue
 
             #Check Invoice from Truck Center Database
             truckCenterID = ''
@@ -282,7 +275,7 @@ for row in cursor.fetchall():
             if invoiceRow != None:
                 truckCenterID = invoiceRow[0]
                 if truckCenterID is None:
-                    print('Missing Index for {orderRef}'.format(orderRef = orderReference))
+                    print(Fore.RED + 'Missing Index for {orderRef}'.format(orderRef = orderReference))
                     continue
 
                 checkTruckCenterSql = """select 
@@ -292,29 +285,32 @@ for row in cursor.fetchall():
                                                 po.GDS_Supplier
                                         from ppvwAllOrderSummary as po
                                             left join pptbStatus as status on po.StatusID = status.StatusID
-                                        where po.ActualOrderNo = '{poNumber}'""".format(poNumber = orderReference)
+                                        where po.ActualOrderNo = '{poNumber}'""".format(poNumber = itemOrderReferenceNo)
                 truckCenterConn = getTruckCenterConnection(truckCenterID)
                 truckCenterCursor = truckCenterConn.cursor()
                 truckCenterCursor.execute(checkTruckCenterSql)
                 truckCenterRow = truckCenterCursor.fetchone()
                 if truckCenterRow != None:
-                    fileSheet['O' + str(fileRowIndex)] = truckCenterRow[2]
-                    fileSheet['P' + str(fileRowIndex)] = truckCenterRow[0]
-                    fileSheet['Q' + str(fileRowIndex)] = truckCenterRow[1]
-                    fileSheet['R' + str(fileRowIndex)] = truckCenterRow[3]
-                    fileSheet['S' + str(fileRowIndex)] = len(truckCenterRow[3])
+                    fileSheet['P' + str(fileRowIndex)] = truckCenterRow[2]
+                    fileSheet['Q' + str(fileRowIndex)] = truckCenterRow[0]
+                    fileSheet['R' + str(fileRowIndex)] = truckCenterRow[1]
+                    fileSheet['S' + str(fileRowIndex)] = truckCenterRow[3]
+                    fileSheet['T' + str(fileRowIndex)] = len(truckCenterRow[3])
 
                     checkPOIndexSql = """select 
                                                 case when count(*) > 0 then 'YES' else 'NO' end as POIndexCreated
                                         from satbPurchaseOrderIndex
                                         where PurchaseOrderNo = '{orderRef}'
                                                 and CompanyCode = '{companyCode}'
-                                                and TruckCenterID = {tcID}""".format(orderRef = orderReference, companyCode = companyCode, tcID = truckCenterID)
-                    poIndexCursor = conn.cursor()
+                                                and TruckCenterID = {tcID}""".format(orderRef = itemOrderReferenceNo, companyCode = companyCode, tcID = truckCenterID)
+                    
+                    checkIndexConn = getDatabaseConnection(sapDatabaseConfiguration)
+                    poIndexCursor = checkIndexConn.cursor()
                     poIndexCursor.execute(checkPOIndexSql)
                     poIndexRow = poIndexCursor.fetchone()
                     if poIndexRow != None:
-                        fileSheet['T' + str(fileRowIndex)] = poIndexRow[0]
+                        fileSheet['U' + str(fileRowIndex)] = poIndexRow[0]
+                    checkIndexConn.close()
 
             fileRowIndex += 1
 
