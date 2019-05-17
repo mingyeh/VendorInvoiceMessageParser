@@ -93,7 +93,7 @@ s.Data.value('declare namespace n0="http://finance.group.volvo.com/vendorinvoice
 s.Data
 from satbSourceData s
 where s.FileType = 'VendorInvoiceDetails') as t
-where FileID in ('115680', '115731', '115757', '115778', '115899', '115916', '115940', '115955', '115958', '115983', '116005')
+where ProcessDate between '09/05/2019' and '10/05/2019'
 order by T.ProcessDate desc'''
 
 sapDatabaseConfiguration = getDatabaseConfiguration('SAP')
@@ -276,6 +276,7 @@ for row in sourceFileRows:
                 truckCenterID = invoiceRow[0]
                 if truckCenterID is None:
                     print(Fore.RED + 'Missing Index for {orderRef}'.format(orderRef = orderReference))
+                    print(Style.RESET_ALL)
                     continue
 
                 checkTruckCenterSql = """select 
