@@ -93,7 +93,7 @@ s.Data.value('declare namespace n0="http://finance.group.volvo.com/vendorinvoice
 s.Data
 from satbSourceData s
 where s.FileType = 'VendorInvoiceDetails') as t
-where ProcessDate between '09/05/2019' and '10/05/2019'
+where FileID in ('150523', '150525', '150526')
 order by T.ProcessDate desc'''
 
 sapDatabaseConfiguration = getDatabaseConfiguration('SAP')
@@ -102,6 +102,8 @@ print(Fore.GREEN + 'Connected to SAP database.\n')
 print(Style.RESET_ALL)
 cursor = conn.cursor()
 cursor.execute(checkSql)
+
+print('Data fetched from SAP database.\n')
 
 wb = openpyxl.workbook.Workbook()
 overallSheet = wb.active
@@ -275,7 +277,7 @@ for row in sourceFileRows:
             if invoiceRow != None:
                 truckCenterID = invoiceRow[0]
                 if truckCenterID is None:
-                    print(Fore.RED + 'Missing Index for {orderRef}'.format(orderRef = orderReference))
+                    print(Fore.RED + '\tMissing Index for {orderRef}'.format(orderRef = orderReference))
                     print(Style.RESET_ALL)
                     continue
 
@@ -313,6 +315,8 @@ for row in sourceFileRows:
                         fileSheet['U' + str(fileRowIndex)] = poIndexRow[0]
                     checkIndexConn.close()
 
+            cornerCell = fileSheet['A2']
+            fileSheet.freeze_panes = cornerCell
             fileRowIndex += 1
 
 wb.save('xmlMessage.xlsx')
